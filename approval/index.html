@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; connect-src https://lkuhoyeeylileuuavukj.supabase.co; form-action https://lkuhoyeeylileuuavukj.supabase.co; base-uri 'none'; frame-ancestors 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https://lkuhoyeeylileuuavukj.supabase.co; form-action https://lkuhoyeeylileuuavukj.supabase.co; base-uri 'none'; frame-ancestors 'none'" />
 <meta name="robots" content="noindex,nofollow" />
 <title>Quote for approval</title>
 <style>
@@ -11,71 +11,7 @@
 </style>
 </head>
 <body>
-<main class="wrap"><article class="card" id="app"><div class="state">Loading…</div></article></main>
-<script>
-(function () {
-  "use strict";
-  var app = document.getElementById("app");
-  var FN = "https://lkuhoyeeylileuuavukj.supabase.co/functions/v1/quote-approval";
-  var token = new URLSearchParams(location.search).get("t") || "";
-  var esc = function (value) {
-    return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  };
-  var longDate = function (iso) {
-    try { return new Date(iso).toLocaleDateString("en", { dateStyle: "long" }); }
-    catch (e) { return ""; }
-  };
-  var symbols = { USD: "$", GBP: "£", EUR: "€", PKR: "Rs ", INR: "₹", AUD: "A$", CAD: "C$" };
-  var money = function (value, code) {
-    return (symbols[code] || (code ? code + " " : "")) +
-      Number(value).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
-  var fail = function (message) {
-    app.innerHTML = '<div class="state">' + esc(message) + "</div>";
-  };
-
-  if (!token || token.length < 32) { fail("This approval link is unavailable or has expired."); return; }
-
-  fetch(FN + "?token=" + encodeURIComponent(token) + "&format=json")
-    .then(function (response) { if (!response.ok) throw new Error("unavailable"); return response.json(); })
-    .then(function (share) {
-      var contact = share.business_email
-        ? '<a href="mailto:' + encodeURIComponent(share.business_email) + '">' + esc(share.business_email) + "</a>"
-        : share.business_phone
-        ? '<a href="tel:' + esc(String(share.business_phone).replace(/[^+0-9]/g, "")) + '">' + esc(share.business_phone) + "</a>"
-        : "Contact " + esc(share.business_name) + ".";
-      var decision = share.status !== "pending"
-        ? '<div class="decision ' + share.status + '"><span class="seal">' + (share.status === "approved" ? "✓" : "✕") +
-          "</span><div><strong>Quote " + esc(share.status) + " by " + esc(share.decided_by_name || "the client") +
-          "</strong><br /><small>" + esc(share.decided_at ? longDate(share.decided_at) : "") + "</small></div></div>"
-        : '<div class="actions">' +
-          '<form method="post" action="' + esc(share.decide_base + "approve") + '">' +
-          '<label>Your name<input name="decided_by_name" required="required" maxlength="120" autocomplete="name" /></label>' +
-          '<button type="submit" class="primary">Approve this quote</button></form>' +
-          '<form method="post" action="' + esc(share.decide_base + "decline") + '">' +
-          '<button type="submit" class="secondary">Decline</button></form></div>' +
-          '<p class="fine">Your choice is recorded once and sent to ' + esc(share.business_name) +
-          ". CrewFlow records the name entered above; it does not independently verify identity.</p>";
-      var rows = (share.items || []).map(function (item) {
-        return "<tr><td>" + esc(item.name) + "</td><td>" + esc(item.quantity) + "</td><td>" +
-          money(item.unitPrice, share.currency_code) + "</td><td>" +
-          money(item.quantity * item.unitPrice, share.currency_code) + "</td></tr>";
-      }).join("");
-
-      document.title = share.quote_title + " — quote from " + share.business_name;
-      app.innerHTML =
-        '<header class="hero"><div class="eyebrow">Quote for approval</div><h1>' + esc(share.quote_title) +
-        "</h1><p>Prepared for " + esc(share.client_name) + " by " + esc(share.business_name) +
-        (share.business_trade ? " · " + esc(share.business_trade) : "") + "</p></header>" +
-        '<div class="content"><table><thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Amount</th></tr></thead><tbody>' +
-        rows + '</tbody></table><div class="total"><span>Total</span><span>' +
-        money(share.total, share.currency_code) + "</span></div>" + decision +
-        '<p class="contact">Questions about this quote? ' + contact + "</p>" +
-        '<p class="expiry">This link expires ' + esc(longDate(share.expires_at)) + ".</p></div>";
-    })
-    .catch(function () { fail("This approval link is unavailable or has expired."); });
+<main class="wrap"><article class="card" id="app"><div class="state">Loading…</div<script src="app.js"></script>});
 })();
 </script>
 </body>
