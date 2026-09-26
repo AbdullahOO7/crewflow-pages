@@ -40,6 +40,11 @@
         : share.business_phone ? "tel:" + share.business_phone.replace(/[^+0-9]/g, "") : "";
       var requestButton = requestHref
         ? '<a class="button secondary" href="' + esc(requestHref) + '">Request similar work</a>' : "";
+      // The happiest moment: an approved job can ask for a Google review.
+      var reviewLink = share.approved_at && share.google_review_url &&
+                       String(share.google_review_url).indexOf("https://") === 0
+        ? '<a class="button review" href="' + esc(share.google_review_url) +
+          '" target="_blank" rel="noopener">Happy with the work? Leave us a review</a>' : "";
       var powered = share.show_powered_by
         ? '<div class="powered">Project proof powered by <strong>CrewFlow</strong></div>' : "";
 
@@ -57,7 +62,7 @@
         '<div class="meta"><span>Completed ' + esc(longDate(share.completed_at)) + "</span><span>Prepared by " +
         esc(share.business_name) + "</span></div></section>" +
         '<div class="actions"><a class="button" href="' + esc(share.assets.report) + '">Download completion report</a>' +
-        requestButton + "</div>" + approval + "</div>" + powered;
+        requestButton + "</div>" + approval + reviewLink + "</div>" + powered;
     })
     .catch(function () { fail("This completion link is unavailable or has expired."); });
 })();
