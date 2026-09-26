@@ -31,12 +31,44 @@
         : share.business_phone
         ? '<a href="tel:' + esc(String(share.business_phone).replace(/[^+0-9]/g, "")) + '">' + esc(share.business_phone) + "</a>"
         : "Contact " + esc(share.business_name) + ".";
+      // Good-better-best: when the quote carries options, the customer
+      // picks one; the recommended itemized scope is the default selection.
+      var optionsBlock = "";
+      var optionField = "";
+      if (share.status === "pending" && Array.isArray(share.options) && share.options.length) {
+        var cards = '<button type="button" class="option selected" onclick="pickOption(-1)">' +
+          '<div class="name">Recommended — as itemized above</div>' +
+          '<div class="price">' + money(share.total, share.currency_code) + "</div></button>";
+        share.options.forEach(function (option, index) {
+          cards += '<button type="button" class="option" onclick="pickOption(' + index + ')">' +
+            '<div class="name">' + esc(option.name) + "</div>" +
+            (option.scope ? '<div class="scope">' + esc(option.scope) + "</div>" : "") +
+            '<div class="price">' + money(option.price, share.currency_code) + "</div></button>";
+        });
+        optionsBlock = '<h2 style="margin-top:22px">Choose an option</h2><div class="options">' + cards + "</div>";
+        optionField = '<input type="hidden" name="option_index" id="option_index" value="-1" />';
+        window.pickOption = function (index) {
+          var field = document.getElementById("option_index");
+          if (field) field.value = String(index);
+          document.querySelectorAll(".option").forEach(function (card) {
+            card.classList.remove("selected");
+          });
+          var buttons = document.querySelectorAll(".option");
+          for (var i = 0; i < buttons.length; i++) {
+            if (buttons[i].getAttribute("onclick") === "pickOption(" + index + ")") {
+              buttons[i].classList.add("selected");
+            }
+          }
+        };
+      }
       var decision = share.status !== "pending"
         ? '<div class="decision ' + share.status + '"><span class="seal">' + (share.status === "approved" ? "✓" : "✕") +
           "</span><div><strong>Quote " + esc(share.status) + " by " + esc(share.decided_by_name || "the client") +
-          "</strong><br /><small>" + esc(share.decided_at ? longDate(share.decided_at) : "") + "</small></div></div>"
+          "</strong>" + (share.chosen_option ? "<br /><small>Selected option: " + esc(share.chosen_option) + "</small>" : "") +
+          "<br /><small>" + esc(share.decided_at ? longDate(share.decided_at) : "") + "</small></div></div>"
         : '<div class="actions">' +
           '<form method="post" action="' + esc(share.decide_base + "approve") + '">' +
+          optionField +
           '<label>Your name<input name="decided_by_name" required="required" maxlength="120" autocomplete="name" /></label>' +
           '<button type="submit" class="primary">Approve this quote</button></form>' +
           '<form method="post" action="' + esc(share.decide_base + "decline") + '">' +
@@ -56,7 +88,7 @@
         (share.business_trade ? " · " + esc(share.business_trade) : "") + "</p></header>" +
         '<div class="content"><table><thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Amount</th></tr></thead><tbody>' +
         rows + '</tbody></table><div class="total"><span>Total</span><span>' +
-        money(share.total, share.currency_code) + "</span></div>" + decision +
+        money(share.total, share.currency_code) + "</span></div>" + optionsBlock + decision +
         '<p class="contact">Questions about this quote? ' + contact + "</p>" +
         '<p class="expiry">This link expires ' + esc(longDate(share.expires_at)) + ".</p></div>";
     })
