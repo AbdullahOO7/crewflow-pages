@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrewFlow · Live Diagnostics & Ops Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #ff6b35;
+      --accent-hover: #ff8252;
+      --critical: #ef4444;
+      --error: #f97316;
+      --warning: #eab308;
+      --info: #3b82f6;
+      --success: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 16px 24px;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #ff9f43);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: white;
+      box-shadow: 0 4px 14px rgba(255, 107, 53, 0.35);
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-secondary {
+      background: #1f2937;
+      color: var(--text);
+      border-color: #374151;
+    }
+    .btn-secondary:hover { background: #374151; }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Auth modal / Card */
+    #authCard {
+      max-width: 520px;
+      margin: 60px auto;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .auth-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .auth-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+
+    .input-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      padding: 11px 14px;
+      background: #0b0f17;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-val {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    /* Filter Toolbar */
+    .toolbar {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .toolbar-search {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .toolbar-search input {
+      font-family: inherit;
+    }
+
+    /* Events List / Table */
+    .events-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: #161f30;
+      color: var(--text-muted);
+      padding: 14px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #1a2234;
+      vertical-align: top;
+    }
+
+    tr:hover td {
+      background: #141c2b;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-critical { background: rgba(239, 68, 68, 0.15); color: var(--critical); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-error { background: rgba(249, 115, 22, 0.15); color: var(--error); border: 1px solid rgba(249, 115, 22, 0.3); }
+    .badge-warning { background: rgba(234, 179, 8, 0.15); color: var(--warning); border: 1px solid rgba(234, 179, 8, 0.3); }
+    .badge-info { background: rgba(59, 130, 246, 0.15); color: var(--info); border: 1px solid rgba(59, 130, 246, 0.3); }
+
+    .code-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #93c5fd;
+      background: rgba(147, 197, 253, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #10b981;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-content">
+      <div class="logo-area">
+        <div class="logo-badge">⚡️</div>
+        <div>
+          <div class="title">CrewFlow Ops Dashboard</div>
+          <div style="font-size: 12px; color: var(--text-muted);">
+            <span class="status-dot"></span><span id="endpointStatus">Connected to VPS API</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions" id="headerActions" style="display: none;">
+        <span id="autoRefreshText" style="font-size: 12px; color: var(--text-muted);">Auto-refresh: 15s</span>
+        <button class="btn btn-secondary" onclick="fetchDiagnostics()">🔄 Refresh Now</button>
+        <button class="btn btn-primary" onclick="copyFilteredJson()">📋 Copy filtered as JSON</button>
+        <button class="btn btn-secondary" onclick="logout()" style="color: #ef4444;">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth Card -->
+    <div id="authCard">
+      <div class="auth-title">Admin Authentication</div>
+      <div class="auth-desc">
+        Enter the diagnostics ops key configured on the VPS to inspect live sync failures and error reports.
+      </div>
+
+      <div class="input-group">
+        <label for="adminKeyInput">Admin Key (Bearer)</label>
+        <input type="password" id="adminKeyInput" placeholder="Paste 64-char hex key here" value="8d7480cb122ab7a9ceebb4d60f95eebfd8ba4906497951413ad9da8063833d08">
+      </div>
+
+      <div class="input-group">
+        <label class="checkbox-row">
+          <input type="checkbox" id="rememberKey" checked>
+          <span>Remember on this device</span>
+        </label>
+      </div>
+
+      <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;" onclick="authenticate()">
+        Unlock Dashboard
+      </button>
+      <div id="authError" style="color: var(--critical); font-size: 13px; margin-top: 12px; display: none;"></div>
+    </div>
+
+    <!-- Main Dashboard Area (Hidden until authenticated) -->
+    <div id="dashboardArea" style="display: none;">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Sync / Issue Events</div>
+          <div class="stat-val" id="statTotal">0</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--critical);">
+          <div class="stat-label">Critical Failures</div>
+          <div class="stat-val" style="color: var(--critical);" id="statCritical">0</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--error);">
+          <div class="stat-label">Errors (Rejections)</div>
+          <div class="stat-val" style="color: var(--error);" id="statError">0</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--success);">
+          <div class="stat-label">Auto-Recovered</div>
+          <div class="stat-val" style="color: var(--success);" id="statRecovered">0</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-search">
+          <input type="text" id="searchInput" placeholder="Search table, record ID, error message, or code..." oninput="applyFilters()">
+        </div>
+        <select id="severityFilter" onchange="applyFilters()" style="width: 160px;">
+          <option value="all">All Severities</option>
+          <option value="critical">Critical</option>
+          <option value="error">Error</option>
+          <option value="warning">Warning</option>
+          <option value="info">Info</option>
+        </select>
+        <select id="autoRecoveredFilter" onchange="applyFilters()" style="width: 180px;">
+          <option value="all">All Recovery States</option>
+          <option value="unrecovered">Unrecovered only</option>
+          <option value="recovered">Auto-recovered</option>
+        </select>
+      </div>
+
+      <!-- Events List -->
+      <div class="events-card">
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Time (UTC)</th>
+                <th>Severity</th>
+                <th>Diagnostic Code / Table</th>
+                <th>Message / Postgres Reason</th>
+                <th>App / OS</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+          <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-icon">🎉</div>
+            <h3 style="font-size: 18px; margin-bottom: 6px; color: var(--text);">Zero Failures Recorded</h3>
+            <p style="font-size: 14px;">The sync queue is healthy. Any permanent server rejections from TestFlight builds will stream here in real time.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast">Copied to clipboard!</div>
+
+  <script>
+    const API_URL = "https://crewflow-api.akhlaq.cloud/functions/v1/diagnostics-ops";
+    let rawEvents = [];
+    let filteredEvents = [];
+    let refreshInterval = null;
+
+    // Check saved credentials
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedKey = localStorage.getItem("crewflow_ops_key");
+      if (savedKey) {
+        document.getElementById("adminKeyInput").value = savedKey;
+        authenticate();
+      }
+    });
+
+    function getAdminKey() {
+      return document.getElementById("adminKeyInput").value.trim();
+    }
+
+    async function authenticate() {
+      const key = getAdminKey();
+      const errEl = document.getElementById("authError");
+      errEl.style.display = "none";
+
+      if (!key) {
+        errEl.innerText = "Please enter the admin key.";
+        errEl.style.display = "block";
+        return;
+      }
+
+      if (document.getElementById("rememberKey").checked) {
+        localStorage.setItem("crewflow_ops_key", key);
+      } else {
+        localStorage.removeItem("crewflow_ops_key");
+      }
+
+      try {
+        await fetchDiagnostics();
+        document.getElementById("authCard").style.display = "none";
+        document.getElementById("dashboardArea").style.display = "block";
+        document.getElementById("headerActions").style.display = "flex";
+
+        // Setup polling
+        if (!refreshInterval) {
+          refreshInterval = setInterval(fetchDiagnostics, 15000);
+        }
+      } catch (err) {
+        errEl.innerText = "Authentication failed: " + err.message;
+        errEl.style.display = "block";
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("crewflow_ops_key");
+      if (refreshInterval) clearInterval(refreshInterval);
+      location.reload();
+    }
+
+    async function fetchDiagnostics() {
+      const key = getAdminKey();
+      const res = await fetch(API_URL + "?limit=500", {
+        headers: { "Authorization": "Bearer " + key }
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("Invalid admin key (HTTP 401)");
+        throw new Error("Server responded with HTTP " + res.status);
+      }
+
+      const data = await res.json();
+      rawEvents = data.events || [];
+      renderStats();
+      applyFilters();
+    }
+
+    function renderStats() {
+      document.getElementById("statTotal").innerText = rawEvents.length;
+      document.getElementById("statCritical").innerText = rawEvents.filter(e => e.severity === "critical").length;
+      document.getElementById("statError").innerText = rawEvents.filter(e => e.severity === "error").length;
+      document.getElementById("statRecovered").innerText = rawEvents.filter(e => e.auto_recovered).length;
+    }
+
+    function applyFilters() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const severity = document.getElementById("severityFilter").value;
+      const recovery = document.getElementById("autoRecoveredFilter").value;
+
+      filteredEvents = rawEvents.filter(e => {
+        if (severity !== "all" && e.severity !== severity) return false;
+        if (recovery === "unrecovered" && e.auto_recovered) return false;
+        if (recovery === "recovered" && !e.auto_recovered) return false;
+
+        if (search) {
+          const matchCode = (e.code || "").toLowerCase().includes(search);
+          const matchMsg = (e.user_message || "").toLowerCase().includes(search);
+          const matchRec = (e.recovery_suggestion || "").toLowerCase().includes(search);
+          const matchCat = (e.category || "").toLowerCase().includes(search);
+          return matchCode || matchMsg || matchRec || matchCat;
+        }
+        return true;
+      });
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("eventsTableBody");
+      const empty = document.getElementById("emptyState");
+
+      if (filteredEvents.length === 0) {
+        tbody.innerHTML = "";
+        empty.style.display = "block";
+        return;
+      }
+
+      empty.style.display = "none";
+      tbody.innerHTML = filteredEvents.map(e => {
+        const time = new Date(e.received_at || e.last_occurred_at).toLocaleString();
+        const sevClass = "badge badge-" + (e.severity || "info");
+        return `
+          <tr>
+            <td style="white-space: nowrap; color: var(--text-muted); font-size: 12px;">${time}</td>
+            <td><span class="${sevClass}">${e.severity}</span></td>
+            <td>
+              <div class="code-text">${escapeHtml(e.code)}</div>
+              ${e.category ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Cat: ${escapeHtml(e.category)}</div>` : ''}
+            </td>
+            <td>
+              <div style="font-weight: 500;">${escapeHtml(e.user_message)}</div>
+              ${e.recovery_suggestion ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">👉 ${escapeHtml(e.recovery_suggestion)}</div>` : ''}
+            </td>
+            <td style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">
+              <div>${escapeHtml(e.app_version || "—")}</div>
+              <div>${escapeHtml(e.os_version || "—")}</div>
+            </td>
+            <td style="font-weight: 600;">${e.occurrence_count || 1}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function copyFilteredJson() {
+      const text = JSON.stringify(filteredEvents, null, 2);
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("Copied " + filteredEvents.length + " events as JSON!");
+      });
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.style.display = "block";
+      setTimeout(() => { t.style.display = "none"; }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
